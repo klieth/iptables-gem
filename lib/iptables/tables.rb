@@ -29,7 +29,7 @@ module IPTables
         }
 
       when String
-        self.parse(input.split(/\n/))
+        self.parse(input.split(/\r?\n/))
 
       else
         raise "don't know how to handle input: #{input.inspect}"
@@ -207,7 +207,8 @@ module IPTables
     attr_reader :chains, :name, :node_addition_points, :my_iptables
 
     # Example: :INPUT DROP [0:0]
-    @@chain_policy_regex = /^:(\S+)\s+(\S+)\s+/
+    #@@chain_policy_regex = /^:(\S+)\s+(\S+)\s+/
+    @@chain_policy_regex = /^:(\S+)\s+(\S+)(\s+(\[\d+:\d+\]))?.*$/
     # Example: -A INPUT -m comment --comment "BEGIN: in-bound traffic"
     @@chain_rule_regex = /^-A\s+(\S+)\s+(.+)/
 
@@ -312,6 +313,10 @@ module IPTables
         position += 1
 
         case line
+        when ""
+          #ignore blank lines
+        when /^\s*#/
+          # ignore comments
         when @@chain_policy_regex
           @chains[$1] = IPTables::Chain.new($1, {'policy' => $2}, self)
         when @@chain_rule_regex
